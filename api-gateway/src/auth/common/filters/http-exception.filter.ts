@@ -1,11 +1,29 @@
-// This file is identical to the one in your monolith.
-// For brevity, I will omit the code, but you should copy it here.
-import { ExceptionFilter, Catch, ArgumentsHost, HttpException } from '@nestjs/common';
+import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
 import { Response } from 'express';
 
-@Catch(HttpException)
+@Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
-    catch(exception: HttpException, host: ArgumentsHost) {
-        // ... same code as your monolith
+    catch(exception: unknown, host: ArgumentsHost) {
+        const ctx = host.switchToHttp();
+        const response = ctx.getResponse<Response>();
+        const request = ctx.getRequest<Request>();
+
+        const status =
+            exception instanceof HttpException
+                ? exception.getStatus()
+                : HttpStatus.INTERNAL_SERVER_ERROR;
+
+        const message =
+            exception instanceof HttpException
+                ? exception.getResponse()
+                : { message: 'Internal server error' };
+
+        response.status(status).json({
+            success: false,
+            statusCode: status,
+            timestamp: new Date().toISOString(),
+            path: request.url,
+            error: message,
+        });
     }
 }

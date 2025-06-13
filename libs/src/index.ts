@@ -1,15 +1,12 @@
-// Constants for service injection and Kafka topics
-export * from './constants/services';
 export * from './constants/kafka-topics';
+export * from './constants/services';
 
-// Shared DTOs
-export * from './dto/user-response.dto';
-
-// Shared Enums and Interfaces
-export * from './types/user.types';
-export * from './types/pagination.types';
-export * from './types/order.types';
-export * from './types/payment.types';
-
-// Shared Kafka Event Contracts
 export * from './contracts/order-created.event';
+
+export * from './dto/user-response.dto';
+export * from './dto/add-to-cart.dto';
+
+export * from './types/order.types';
+export * from './types/pagination.types';
+export * from './types/payment.types';
+export * from './types/user.types';

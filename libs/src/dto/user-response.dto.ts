@@ -1,9 +1,9 @@
-import { UserRole } from '../types/user.types';
+import { UserRole } from "../types/user.types";
 
 export class UserResponseDto {
-    id: number;
-    name: string;
-    email: string;
-    birthdate: Date;
-    role: UserRole;
+    id!: number;
+    name!: string;
+    email!: string;
+    birthdate!: Date;
+    role!: UserRole;
 }

@@ -14,7 +14,12 @@ export class UsersService {
         private readonly userRepository: Repository<User>,
     ) {}
 
-    async createUser(createUserDto: CreateUserDto): Promise<User> {
+    private toResponseDto(user: User): UserResponseDto {
+        const { password, ...result } = user;
+        return result;
+    }
+
+    async createUser(createUserDto: CreateUserDto): Promise<UserResponseDto> {
         const existingUser = await this.userRepository.findOneBy({ email: createUserDto.email });
         if (existingUser) {
             throw new ConflictException('User with this email already exists');
@@ -27,14 +32,13 @@ export class UsersService {
             password: hashedPassword,
         });
 
-        return this.userRepository.save(newUser);
+        const savedUser = await this.userRepository.save(newUser);
+        return this.toResponseDto(savedUser);
     }
 
     async findAll(options: PaginationOptions): Promise<UserResponseDto[]> {
-        // Note: In a real app, you would implement proper pagination logic here.
-        // This is a simplified version.
         const users = await this.userRepository.find();
-        return users.map(user => new UserResponseDto(user));
+        return users.map(this.toResponseDto);
     }
 
     async findOneById(id: number): Promise<User> {
@@ -45,11 +49,26 @@ export class UsersService {
         return user;
     }
 
-    async findByEmail(email: string): Promise<User | null> {
-        return this.userRepository.findOneBy({ email });
+    // API Gateway'e parola dahil tam entity'i döndüren hassas bir metod
+    async findOneByIdWithPassword(id: number): Promise<User> {
+        const user = await this.userRepository.findOne({
+            where: { id },
+            select: ['id', 'name', 'email', 'password', 'role', 'is_active', 'birthdate', 'created_at', 'updated_at'],
+        });
+        if (!user) {
+            throw new NotFoundException(`User with ID ${id} not found`);
+        }
+        return user;
     }
 
-    async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
+    async findByEmail(email: string): Promise<User | null> {
+        return this.userRepository.findOne({
+            where: { email },
+            select: ['id', 'name', 'email', 'password', 'role', 'is_active', 'birthdate', 'created_at', 'updated_at'],
+        });
+    }
+
+    async update(id: number, updateUserDto: UpdateUserDto): Promise<UserResponseDto> {
         const user = await this.findOneById(id);
 
         if (updateUserDto.password) {
@@ -57,7 +76,8 @@ export class UsersService {
         }
 
         Object.assign(user, updateUserDto);
-        return this.userRepository.save(user);
+        const updatedUser = await this.userRepository.save(user);
+        return this.toResponseDto(updatedUser);
     }
 
     async remove(id: number): Promise<{ message: string }> {

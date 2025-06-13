@@ -1,73 +1,73 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Product } from './database/entities/product.entity';
-import { ProductImage } from './database/entities/product-image.entity';
+import { Image } from './database/entities/image.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { PaginatedResult, PaginationOptions } from '@ecommerce/common';
 import { RedisService } from './redis/redis.service';
+import { PaginationOptions, PaginatedResult } from '@ecommerce/common';
 
 @Injectable()
 export class ProductsService {
     constructor(
         @InjectRepository(Product)
         private readonly productRepository: Repository<Product>,
-        @InjectRepository(ProductImage)
-        private readonly productImageRepository: Repository<ProductImage>,
+        @InjectRepository(Image)
+        private readonly imageRepository: Repository<Image>,
         private readonly redisService: RedisService,
     ) {}
 
     async create(createProductDto: CreateProductDto): Promise<Product> {
-        const { images, ...productData } = createProductDto;
-        const product = this.productRepository.create(productData);
-        const savedProduct = await this.productRepository.save(product);
+        const { images: imageUrls, ...productData } = createProductDto;
 
-        if (images && images.length > 0) {
-            const imageEntities = images.map((img) =>
-                this.productImageRepository.create({ ...img, product: savedProduct }),
+        const product = this.productRepository.create(productData);
+
+        if (imageUrls && imageUrls.length > 0) {
+            product.images = imageUrls.map((url) =>
+                this.imageRepository.create({ url }),
             );
-            await this.productImageRepository.save(imageEntities);
-            savedProduct.images = imageEntities;
         }
-        await this.redisService.delWithPrefix('products:'); // Invalidate lists
-        return savedProduct;
+
+        await this.redisService.del('products_all'); // Yeni ürün eklendiği için cache'i temizle
+        return this.productRepository.save(product);
     }
 
-    async findAll(options: PaginationOptions): Promise<PaginatedResult<Product>> {
-        const { page = 1, limit = 10, sort = 'id', order = 'ASC' } = options;
-        const cacheKey = `products:all:page=${page}&limit=${limit}&sort=${sort}&order=${order}`;
-        const cachedData = await this.redisService.get(cacheKey);
+    async findAll(
+        options: PaginationOptions,
+    ): Promise<PaginatedResult<Product>> {
+        const cacheKey = `products_all_page_${options.page}_limit_${options.limit}`;
+        const cachedProducts = await this.redisService.get(cacheKey);
 
-        if (cachedData) {
-            return JSON.parse(cachedData);
+        if (cachedProducts) {
+            return JSON.parse(cachedProducts);
         }
 
         const [data, total] = await this.productRepository.findAndCount({
-            relations: ['images'],
-            order: { [sort]: order.toUpperCase() as 'ASC' | 'DESC' },
-            skip: (page - 1) * limit,
-            take: limit,
+            take: options.limit,
+            skip: (options.page - 1) * options.limit,
         });
 
-        const result = { data, total, page, limit };
-        await this.redisService.set(cacheKey, JSON.stringify(result), 3600); // Cache for 1 hour
+        const result: PaginatedResult<Product> = {
+            data,
+            total,
+            page: options.page,
+            limit: options.limit,
+        };
 
+        await this.redisService.set(cacheKey, JSON.stringify(result), 3600); // 1 saat cache
         return result;
     }
 
     async findOne(id: number): Promise<Product> {
-        const cacheKey = `products:${id}`;
-        const cachedData = await this.redisService.get(cacheKey);
+        const cacheKey = `product_${id}`;
+        const cachedProduct = await this.redisService.get(cacheKey);
 
-        if (cachedData) {
-            return JSON.parse(cachedData);
+        if (cachedProduct) {
+            return JSON.parse(cachedProduct);
         }
 
-        const product = await this.productRepository.findOne({
-            where: { id },
-            relations: ['images'],
-        });
+        const product = await this.productRepository.findOneBy({ id });
 
         if (!product) {
             throw new NotFoundException(`Product with ID ${id} not found`);
@@ -77,58 +77,44 @@ export class ProductsService {
         return product;
     }
 
-    async update(id: number, updateProductDto: UpdateProductDto): Promise<Product> {
-        const product = await this.findOne(id); // Use findOne to ensure it exists
-        Object.assign(product, updateProductDto);
-        const updatedProduct = await this.productRepository.save(product);
-
-        // Invalidate caches
-        await this.redisService.del(`products:${id}`);
-        await this.redisService.delWithPrefix('products:all:');
-
-        return updatedProduct;
-    }
-
-    async remove(id: number): Promise<{ message: string }> {
-        const result = await this.productRepository.delete(id);
-        if (result.affected === 0) {
-            throw new NotFoundException(`Product with ID ${id} not found`);
-        }
-
-        // Invalidate caches
-        await this.redisService.del(`products:${id}`);
-        await this.redisService.delWithPrefix('products:all:');
-
-        return { message: `Product with ID ${id} successfully deleted.` };
-    }
-
-    async search(query: string, options: PaginationOptions): Promise<PaginatedResult<Product>> {
-        const { page = 1, limit = 10, sort = 'id', order = 'ASC' } = options;
-        const [data, total] = await this.productRepository.findAndCount({
-            where: [{ name: ILike(`%${query}%`) }, { description: ILike(`%${query}%`) }],
-            relations: ['images'],
-            order: { [sort]: order.toUpperCase() as 'ASC' | 'DESC' },
-            skip: (page - 1) * limit,
-            take: limit,
+    async update(
+        id: number,
+        updateProductDto: UpdateProductDto,
+    ): Promise<Product> {
+        const product = await this.productRepository.preload({
+            id: id,
+            ...updateProductDto,
         });
-        return { data, total, page, limit };
-    }
 
-    async updateStock(id: number, quantityToDecrement: number): Promise<Product> {
-        const product = await this.productRepository.findOneBy({ id });
         if (!product) {
             throw new NotFoundException(`Product with ID ${id} not found`);
         }
 
-        if (product.stock < quantityToDecrement) {
-            throw new BadRequestException(`Insufficient stock for product #${id}`);
+        await this.redisService.del(`product_${id}`);
+        await this.redisService.del('products_all');
+
+        return this.productRepository.save(product);
+    }
+
+    async remove(id: number): Promise<{ message: string }> {
+        const result = await this.productRepository.delete(id);
+
+        if (result.affected === 0) {
+            throw new NotFoundException(`Product with ID ${id} not found`);
         }
 
-        product.stock -= quantityToDecrement;
+        await this.redisService.del(`product_${id}`);
+        await this.redisService.del('products_all');
 
-        // Invalidate caches since the data has changed
-        await this.redisService.del(`products:${id}`);
-        await this.redisService.delWithPrefix('products:all:');
+        return { message: `Product with ID ${id} successfully deleted` };
+    }
+
+    async updateStock(productId: number, quantity: number): Promise<Product> {
+        const product = await this.findOne(productId);
+        product.stock -= quantity;
+
+        await this.redisService.del(`product_${productId}`);
+        await this.redisService.del('products_all');
 
         return this.productRepository.save(product);
     }

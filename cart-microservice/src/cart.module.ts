@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { CartController } from './cart.controller';
 import { CartService } from './cart.service';
+import { CartController } from './cart.controller';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Cart, CartSchema } from './database/schemas/cart.schema';
@@ -15,7 +15,7 @@ import { Cart, CartSchema } from './database/schemas/cart.schema';
             imports: [ConfigModule],
             inject: [ConfigService],
             useFactory: (configService: ConfigService) => ({
-                uri: configService.get<string>('CART_MONGO_URI'),
+                uri: configService.get<string>('MONGO_URI'),
             }),
         }),
         MongooseModule.forFeature([{ name: Cart.name, schema: CartSchema }]),

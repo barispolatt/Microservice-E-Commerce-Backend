@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
-import { ProductsController } from './products.controller';
 import { ProductsService } from './products.service';
+import { ProductsController } from './products.controller';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Product } from './database/entities/product.entity';
-import { ProductImage } from './database/entities/product-image.entity';
+import { join } from 'path';
 import { RedisModule } from './redis/redis.module';
+import { Product } from './database/entities/product.entity';
+import { Image } from './database/entities/image.entity';
 
 @Module({
     imports: [
@@ -23,11 +24,11 @@ import { RedisModule } from './redis/redis.module';
                 username: configService.get<string>('PRODUCTS_DB_USER'),
                 password: configService.get<string>('PRODUCTS_DB_PASSWORD'),
                 database: configService.get<string>('PRODUCTS_DB_NAME'),
-                entities: [Product, ProductImage],
-                synchronize: true, // Should be false in production
+                entities: [Product, Image], // İki entity'i de ekledik
+                synchronize: true, // Geliştirme ortamı için true
             }),
         }),
-        TypeOrmModule.forFeature([Product, ProductImage]),
+        TypeOrmModule.forFeature([Product, Image]), // Repository'leri inject edebilmek için ekledik
         RedisModule,
     ],
     controllers: [ProductsController],

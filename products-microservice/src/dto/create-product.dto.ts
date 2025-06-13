@@ -1,37 +1,31 @@
-import { IsString, IsNumber, IsInt, IsPositive, IsArray, IsOptional, ValidateNested, Min } from 'class-validator';
-import { Type } from 'class-transformer';
-
-class ProductImageDto {
-    @IsString()
-    url: string;
-
-    @IsInt()
-    @Min(0)
-    index: number;
-}
+import {
+    IsString,
+    IsNumber,
+    IsNotEmpty,
+    IsOptional,
+    IsArray,
+    Min,
+} from 'class-validator';
 
 export class CreateProductDto {
     @IsString()
+    @IsNotEmpty()
     name: string;
 
     @IsString()
-    description: string;
+    @IsOptional()
+    description?: string;
 
-    @IsNumber({ maxDecimalPlaces: 2 })
-    @IsPositive()
+    @IsNumber()
+    @Min(0)
     price: number;
 
-    @IsInt()
+    @IsNumber()
     @Min(0)
     stock: number;
 
-    @IsInt()
-    @IsPositive()
-    sellerId: number;
-
     @IsArray()
+    @IsString({ each: true })
     @IsOptional()
-    @ValidateNested({ each: true })
-    @Type(() => ProductImageDto)
-    images?: ProductImageDto[];
+    images?: string[];
 }

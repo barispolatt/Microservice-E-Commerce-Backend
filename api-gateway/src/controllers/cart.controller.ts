@@ -1,9 +1,17 @@
-import { Controller, Post, Body, Get, Delete, Inject, UseGuards } from '@nestjs/common';
+import {
+    Controller,
+    Post,
+    Body,
+    Inject,
+    UseGuards,
+    Get,
+    Delete,
+} from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { CART_SERVICE, JwtPayload } from '@ecommerce/common';
+import { AddToCartDto, CART_SERVICE } from '@ecommerce/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { AddToCartDto } from 'apps/cart-microservice/src/dto/add-to-cart.dto';
+import { JwtPayload } from '@ecommerce/common';
 
 @Controller('cart')
 @UseGuards(JwtAuthGuard)
