@@ -9,6 +9,10 @@
     "prepublishOnly": "npm run build"
   },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "class-validator": "^0.14.1",
+    "class-transformer": "^0.5.1"
   }
 }

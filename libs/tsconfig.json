@@ -4,11 +4,14 @@
     "target": "es2021",
     "declaration": true,
     "declarationMap": true,
+    "sourceMap": true,
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]
