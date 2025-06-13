@@ -1,0 +1,224 @@
+version: '3.8'
+
+services:
+  #--------------------------------#
+  # INFRASTRUCTURE SERVICES        #
+  #--------------------------------#
+  users-db:
+    image: postgres:15-alpine
+    container_name: users-db
+    ports:
+      - "5433:5432" # Host port 5433 -> Container port 5432
+    environment:
+      POSTGRES_USER: ${USERS_DB_USER}
+      POSTGRES_PASSWORD: ${USERS_DB_PASSWORD}
+      POSTGRES_DB: ${USERS_DB_NAME}
+    volumes:
+      - users_pgdata:/var/lib/postgresql/data
+    networks:
+      - ecommerce-net
+
+  products-db:
+    image: postgres:15-alpine
+    container_name: products-db
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_USER: ${PRODUCTS_DB_USER}
+      POSTGRES_PASSWORD: ${PRODUCTS_DB_PASSWORD}
+      POSTGRES_DB: ${PRODUCTS_DB_NAME}
+    volumes:
+      - products_pgdata:/var/lib/postgresql/data
+    networks:
+      - ecommerce-net
+
+  orders-db:
+    image: postgres:15-alpine
+    container_name: orders-db
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_USER: ${ORDERS_DB_USER}
+      POSTGRES_PASSWORD: ${ORDERS_DB_PASSWORD}
+      POSTGRES_DB: ${ORDERS_DB_NAME}
+    volumes:
+      - orders_pgdata:/var/lib/postgresql/data
+    networks:
+      - ecommerce-net
+
+  mongo-cart:
+    image: mongo:latest
+    container_name: mongo-cart
+    ports:
+      - "27017:27017"
+    volumes:
+      - cart_mongodata:/data/db
+    networks:
+      - ecommerce-net
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - ecommerce-net
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.2.1
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - ecommerce-net
+
+  kafka:
+    image: confluentinc/cp-kafka:7.2.1
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_INTERNAL://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    networks:
+      - ecommerce-net
+
+  #--------------------------------#
+  # APPLICATION MICROSERVICES      #
+  #--------------------------------#
+  api-gateway:
+    build:
+      context: .
+      dockerfile: ./api-gateway/Dockerfile
+    container_name: api-gateway
+    ports:
+      - "${API_GATEWAY_PORT}:${API_GATEWAY_PORT}"
+    volumes:
+      - ./api-gateway:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on: [auth-microservice, users-microservice, products-microservice, orders-microservice, cart-microservice]
+    env_file: .env
+    networks:
+      - ecommerce-net
+
+  auth-microservice:
+    build:
+      context: .
+      dockerfile: ./auth-microservice/Dockerfile
+    container_name: auth-microservice
+    volumes:
+      - ./auth-microservice:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on: [users-microservice]
+    env_file: .env
+    networks:
+      - ecommerce-net
+
+  users-microservice:
+    build:
+      context: .
+      dockerfile: ./users-microservice/Dockerfile
+    container_name: users-microservice
+    volumes:
+      - ./users-microservice:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on: [users-db]
+    env_file: .env
+    networks:
+      - ecommerce-net
+
+  products-microservice:
+    build:
+      context: .
+      dockerfile: ./products-microservice/Dockerfile
+    container_name: products-microservice
+    volumes:
+      - ./products-microservice:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on: [products-db, redis]
+    env_file: .env
+    networks:
+      - ecommerce-net
+
+  orders-microservice:
+    build:
+      context: .
+      dockerfile: ./orders-microservice/Dockerfile
+    container_name: orders-microservice
+    volumes:
+      - ./orders-microservice:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on: [orders-db, kafka]
+    env_file: .env
+    networks:
+      - ecommerce-net
+
+  cart-microservice:
+    build:
+      context: .
+      dockerfile: ./cart-microservice/Dockerfile
+    container_name: cart-microservice
+    volumes:
+      - ./cart-microservice:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on: [mongo-cart]
+    env_file: .env
+    networks:
+      - ecommerce-net
+
+  notification-microservice:
+    build:
+      context: .
+      dockerfile: ./notification-microservice/Dockerfile
+    container_name: notification-microservice
+    volumes:
+      - ./notification-microservice:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on: [kafka]
+    env_file: .env
+    networks:
+      - ecommerce-net
+
+  shipping-microservice:
+    build:
+      context: .
+      dockerfile: ./shipping-microservice/Dockerfile
+    container_name: shipping-microservice
+    volumes:
+      - ./shipping-microservice:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on: [kafka]
+    env_file: .env
+    networks:
+      - ecommerce-net
+
+  stock-microservice:
+    build:
+      context: .
+      dockerfile: ./stock-microservice/Dockerfile
+    container_name: stock-microservice
+    volumes:
+      - ./stock-microservice:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on: [kafka, products-microservice]
+    env_file: .env
+    networks:
+      - ecommerce-net
+
+networks:
+  ecommerce-net:
+    driver: bridge
+
+volumes:
+  users_pgdata:
+  products_pgdata:
+  orders_pgdata:
+  cart_mongodata:

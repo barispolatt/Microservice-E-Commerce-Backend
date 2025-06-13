@@ -1,0 +1,14 @@
+{
+  "name": "@ecommerce/common",
+  "version": "1.0.0",
+  "description": "Shared types, DTOs, and contracts for the e-commerce app",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

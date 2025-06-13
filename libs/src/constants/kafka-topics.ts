@@ -1,0 +1,1 @@
+export const TOPIC_ORDER_CREATED = 'order_created';
