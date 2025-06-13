@@ -113,4 +113,23 @@ export class ProductsService {
         });
         return { data, total, page, limit };
     }
+
+    async updateStock(id: number, quantityToDecrement: number): Promise<Product> {
+        const product = await this.productRepository.findOneBy({ id });
+        if (!product) {
+            throw new NotFoundException(`Product with ID ${id} not found`);
+        }
+
+        if (product.stock < quantityToDecrement) {
+            throw new BadRequestException(`Insufficient stock for product #${id}`);
+        }
+
+        product.stock -= quantityToDecrement;
+
+        // Invalidate caches since the data has changed
+        await this.redisService.del(`products:${id}`);
+        await this.redisService.delWithPrefix('products:all:');
+
+        return this.productRepository.save(product);
+    }
 }
