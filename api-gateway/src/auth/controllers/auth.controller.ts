@@ -2,14 +2,14 @@ import { Controller, Post, Body, Inject, Get, UseGuards } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { AUTH_SERVICE, USERS_SERVICE, UserResponseDto, JwtPayload } from '@ecommerce/common';
 import { lastValueFrom } from 'rxjs';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { CurrentUser } from '../decorators/current-user.decorator';
 
 // Assuming CreateUserDto is defined in the users-microservice DTOs
 // but for simplicity in the gateway, we can redefine or import it.
 // For this project, we'll assume the gateway knows about the CreateUserDto shape.
-import { CreateUserDto } from 'apps/users-microservice/src/dto/create-user.dto';
-import { LoginDto } from 'apps/auth-microservice/src/dto/login.dto';
+import { CreateUserDto, LoginDto } from '@ecommerce/common'; // <-- Düzeltilmiş import
+
 
 
 @Controller('auth')

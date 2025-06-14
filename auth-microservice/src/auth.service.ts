@@ -4,8 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { LoginDto } from './dto/login.dto';
-import { USERS_SERVICE, JwtPayload, UserResponseDto } from '@ecommerce/common';
-import { User } from 'apps/users-microservice/src/database/entities/user.entity';
+import { USERS_SERVICE, JwtPayload, UserResponseDto, UserRecord } from '@ecommerce/common';
 
 @Injectable()
 export class AuthService implements OnModuleInit {
@@ -15,12 +14,11 @@ export class AuthService implements OnModuleInit {
     ) {}
 
     async onModuleInit() {
-        // Establish connection to the users microservice on startup
         await this.usersClient.connect();
     }
 
     async login(loginDto: LoginDto) {
-        const user: User = await firstValueFrom(
+        const user: UserRecord = await firstValueFrom(
             this.usersClient.send({ cmd: 'get_user_by_email' }, { email: loginDto.email }),
         );
 
@@ -58,7 +56,7 @@ export class AuthService implements OnModuleInit {
 
     async getMe(userId: number): Promise<UserResponseDto> {
         // This method is useful for refreshing user profile data and issuing a new token if needed.
-        const user: User = await firstValueFrom(
+        const user: UserRecord = await firstValueFrom(
             this.usersClient.send({ cmd: 'get_user_by_id' }, { id: userId }),
         );
 

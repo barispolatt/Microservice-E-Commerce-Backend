@@ -81,19 +81,56 @@ export class ProductsService {
         id: number,
         updateProductDto: UpdateProductDto,
     ): Promise<Product> {
+        const { images: imageUrls, ...productData } = updateProductDto;
+
         const product = await this.productRepository.preload({
-            id: id,
-            ...updateProductDto,
+            id,
+            ...productData,
         });
 
         if (!product) {
             throw new NotFoundException(`Product with ID ${id} not found`);
         }
 
+        if (imageUrls) {
+            product.images = imageUrls.map((url) =>
+                this.imageRepository.create({ url }),
+            );
+        }
+
         await this.redisService.del(`product_${id}`);
-        await this.redisService.del('products_all');
+        await this.redisService.delWithPrefix('products_all'); // Cache'i daha etkin temizle
 
         return this.productRepository.save(product);
+    }
+
+    async search(
+        query: string,
+        options: PaginationOptions,
+    ): Promise<PaginatedResult<Product>> {
+        const { page = 1, limit = 10 } = options;
+
+        const queryBuilder = this.productRepository.createQueryBuilder('product');
+
+        if (query) {
+            queryBuilder.where(
+                'product.name ILIKE :query OR product.description ILIKE :query',
+                { query: `%${query}%` },
+            );
+        }
+
+        const [data, total] = await queryBuilder
+            .leftJoinAndSelect('product.images', 'image') // Resimleri de sonuçlara dahil et
+            .take(limit)
+            .skip((page - 1) * limit)
+            .getManyAndCount();
+
+        return {
+            data,
+            total,
+            page: Number(page),
+            limit: Number(limit),
+        };
     }
 
     async remove(id: number): Promise<{ message: string }> {

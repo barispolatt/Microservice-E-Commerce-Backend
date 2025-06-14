@@ -11,3 +11,15 @@ export interface JwtPayload {
     email: string;
     role: UserRole;
 }
+
+export interface UserRecord {
+    id: number;
+    name: string;
+    email: string;
+    password: string;
+    is_active: boolean;
+    role: UserRole;
+    birthdate: Date;
+    created_at: Date;
+    updated_at: Date;
+}

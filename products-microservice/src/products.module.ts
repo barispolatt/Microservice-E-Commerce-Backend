@@ -3,7 +3,6 @@ import { ProductsService } from './products.service';
 import { ProductsController } from './products.controller';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { join } from 'path';
 import { RedisModule } from './redis/redis.module';
 import { Product } from './database/entities/product.entity';
 import { Image } from './database/entities/image.entity';

@@ -1,7 +1,7 @@
 import { Controller, ParseIntPipe } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
+import { CreateUserDto } from '@ecommerce/common';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PaginationOptions } from '@ecommerce/common';
 
