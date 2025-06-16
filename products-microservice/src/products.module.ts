@@ -23,11 +23,11 @@ import { Image } from './database/entities/image.entity';
                 username: configService.get<string>('PRODUCTS_DB_USER'),
                 password: configService.get<string>('PRODUCTS_DB_PASSWORD'),
                 database: configService.get<string>('PRODUCTS_DB_NAME'),
-                entities: [Product, Image], // İki entity'i de ekledik
+                entities: [Product, Image],
                 synchronize: true, // Geliştirme ortamı için true
             }),
         }),
-        TypeOrmModule.forFeature([Product, Image]), // Repository'leri inject edebilmek için ekledik
+        TypeOrmModule.forFeature([Product, Image]), 
         RedisModule,
     ],
     controllers: [ProductsController],
