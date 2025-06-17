@@ -1,14 +1,22 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CartService } from './cart.service';
-import { AddToCartDto } from '@ecommerce/common';
+
+// FIX: Define the expected payload shape for clarity.
+interface AddToCartPayload {
+    userId: number;
+    productId: number;
+    name: string;
+    price: number;
+    quantity: number;
+}
 
 @Controller()
 export class CartController {
     constructor(private readonly cartService: CartService) {}
 
     @MessagePattern({ cmd: 'add_to_cart' })
-    addToCart(@Payload() payload: AddToCartDto & { userId: number }) {
+    addToCart(@Payload() payload: AddToCartPayload) {
         return this.cartService.addToCart(payload);
     }
 

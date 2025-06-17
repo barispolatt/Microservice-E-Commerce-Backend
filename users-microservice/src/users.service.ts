@@ -5,7 +5,7 @@ import * as bcrypt from 'bcrypt';
 import { User } from './database/entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { PaginationOptions, UserResponseDto } from '@ecommerce/common';
+import { PaginationOptions, UserResponseDto, PaginatedResult } from '@ecommerce/common';
 
 @Injectable()
 export class UsersService {
@@ -36,9 +36,27 @@ export class UsersService {
         return this.toResponseDto(savedUser);
     }
 
-    async findAll(options: PaginationOptions): Promise<UserResponseDto[]> {
-        const users = await this.userRepository.find();
-        return users.map(this.toResponseDto);
+    // FIX: Implemented correct pagination logic.
+    async findAll(options: PaginationOptions): Promise<PaginatedResult<UserResponseDto>> {
+        const page = options.page || 1;
+        const limit = options.limit || 10;
+
+        const [users, total] = await this.userRepository.findAndCount({
+            take: limit,
+            skip: (page - 1) * limit,
+            order: {
+                created_at: 'DESC' // Default ordering
+            }
+        });
+
+        const data = users.map(user => this.toResponseDto(user));
+
+        return {
+            data,
+            total,
+            page,
+            limit,
+        };
     }
 
     async findOneById(id: number): Promise<User> {
@@ -49,7 +67,7 @@ export class UsersService {
         return user;
     }
 
-    // API Gateway'e parola dahil tam entity'i döndüren hassas bir metod
+    // ... (rest of the file remains the same) ...
     async findOneByIdWithPassword(id: number): Promise<User> {
         const user = await this.userRepository.findOne({
             where: { id },
