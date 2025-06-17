@@ -39,7 +39,6 @@ export class CartController {
             throw new BadRequestException(`Insufficient stock for product #${product.name}.`);
         }
 
-        // Step 2: Create a secure payload for the cart service.
         const payload = {
             userId: user.sub,
             productId: product.id,
@@ -48,7 +47,6 @@ export class CartController {
             quantity: addToCartDto.quantity,
         };
 
-        // Step 3: Send the secure payload to the cart service.
         return this.cartClient.send({ cmd: 'add_to_cart' }, payload);
     }
 

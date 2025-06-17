@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Cart, CartDocument } from './database/schemas/cart.schema';
 
-// FIX: Define the DTO for the secure payload.
+
 interface AddToCartInternalDto {
     userId: number;
     productId: number;
@@ -16,7 +16,6 @@ interface AddToCartInternalDto {
 export class CartService {
     constructor(@InjectModel(Cart.name) private cartModel: Model<CartDocument>) {}
 
-    // FIX: Method updated to use the secure internal DTO.
     async addToCart(dto: AddToCartInternalDto) {
         const cart = await this.cartModel.findOne({ userId: dto.userId });
 
@@ -34,16 +33,13 @@ export class CartService {
             return newCart.save();
         }
 
-        // If cart exists, check if the item is already in the cart.
         const itemIndex = cart.items.findIndex(
             (item) => item.productId === dto.productId,
         );
 
         if (itemIndex > -1) {
-            // If item exists, update the quantity.
             cart.items[itemIndex].quantity += dto.quantity;
         } else {
-            // If item does not exist, add it to the items array.
             cart.items.push({
                 productId: dto.productId,
                 name: dto.name,

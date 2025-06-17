@@ -36,7 +36,6 @@ export class UsersService {
         return this.toResponseDto(savedUser);
     }
 
-    // FIX: Implemented correct pagination logic.
     async findAll(options: PaginationOptions): Promise<PaginatedResult<UserResponseDto>> {
         const page = options.page || 1;
         const limit = options.limit || 10;
@@ -67,7 +66,6 @@ export class UsersService {
         return user;
     }
 
-    // ... (rest of the file remains the same) ...
     async findOneByIdWithPassword(id: number): Promise<User> {
         const user = await this.userRepository.findOne({
             where: { id },

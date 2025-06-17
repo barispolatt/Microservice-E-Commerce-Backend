@@ -18,7 +18,7 @@ export class StockService implements OnModuleInit {
             this.productsClient.send(
                 { cmd: 'update_product_stock' },
                 { id: item.productId, quantity: item.quantity },
-            ).subscribe(); // .subscribe() is needed to fire the event
+            ).subscribe();
         }
     }
 }

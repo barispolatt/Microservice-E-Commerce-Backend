@@ -36,7 +36,6 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         await this.client.del(key);
     }
 
-    // FIX: Added method to delete keys based on a prefix pattern.
     async delWithPrefix(prefix: string): Promise<void> {
         const keys = await this.client.keys(`${prefix}*`);
         if (keys.length > 0) {

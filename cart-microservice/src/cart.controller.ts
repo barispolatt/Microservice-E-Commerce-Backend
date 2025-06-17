@@ -2,7 +2,6 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CartService } from './cart.service';
 
-// FIX: Define the expected payload shape for clarity.
 interface AddToCartPayload {
     userId: number;
     productId: number;
