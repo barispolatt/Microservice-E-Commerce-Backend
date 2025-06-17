@@ -1,0 +1,25 @@
+# Git and IDE files
+.git
+.gitignore
+.idea
+.vscode
+
+# Docker files
+.dockerignore
+Dockerfile
+docker-compose.yml
+
+# Node.js
+node_modules
+*/node_modules
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# Environment files (should not be in the image)
+.env
+.env.example
+
+# Build output
+dist
+*/dist
